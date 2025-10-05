@@ -1,0 +1,56 @@
+CREATE DATABASE smart_ticketing;
+USE smart_ticketing;
+
+CREATE TABLE users (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username     VARCHAR(50) UNIQUE NOT NULL,
+    email        VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role         ENUM('passenger','admin','validator') NOT NULL,
+    wallet_balance DECIMAL(10,2) DEFAULT 0,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE routes (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    route_code  VARCHAR(20) UNIQUE NOT NULL,
+    origin      VARCHAR(100) NOT NULL,
+    destination VARCHAR(100) NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE trips (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    route_id   BIGINT NOT NULL,
+    vehicle_id VARCHAR(50),
+    start_time DATETIME,
+    end_time   DATETIME,
+    status     ENUM('ON_TIME','DELAYED','CANCELLED') DEFAULT 'ON_TIME',
+    FOREIGN KEY (route_id) REFERENCES routes(id)
+);
+
+CREATE TABLE tickets (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ticket_code  VARCHAR(50) UNIQUE NOT NULL,
+    user_id    BIGINT NOT NULL,
+    trip_id    BIGINT NOT NULL,
+    type       ENUM('single','multi','pass') NOT NULL,
+    price      DECIMAL(10,2) NOT NULL,
+    state      ENUM('CREATED','PAID','VALIDATED','EXPIRED') DEFAULT 'CREATED',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (trip_id) REFERENCES trips(id)
+);
+
+CREATE TABLE payments (
+    id        BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ticket_id BIGINT NOT NULL,
+    user_id   BIGINT NOT NULL,
+    amount    DECIMAL(10,2) NOT NULL,
+    status    ENUM('PENDING','CONFIRMED','FAILED') DEFAULT 'CONFIRMED',
+    provider_ref VARCHAR(100),
+    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ticket_id) REFERENCES tickets(id),
+    FOREIGN KEY (user_id)   REFERENCES users(id)
+);
